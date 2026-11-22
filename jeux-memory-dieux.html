@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#14080e">
+  <meta name="description" content="Jeu de mémoire : retrouve les 20 paires de divinités hindoues.">
+  <title>Mémoire des dieux indiens</title>
+  <style>
+    :root {
+      --bg: #14080e;
+      --bg-glow: #3a1220;
+      --ink: #f8edd4;
+      --muted: #d7c4a0;
+      --gold: #e6c35a;
+      --gold-deep: #c9a227;
+      --saffron: #e08a2c;
+      --maroon: #6b1530;
+      --maroon-dark: #3a0c1c;
+      --card-back: #4a1024;
+      --card-face: #fff6e4;
+      --card-ink: #3a1018;
+      --matched: #f3e3a8;
+      --shadow: rgba(0, 0, 0, 0.45);
+      --header-h: auto;
+      --gap: clamp(0.28rem, 1.2vw, 0.7rem);
+      --pad: max(0.7rem, env(safe-area-inset-left, 0px));
+      --radius: 0.55rem;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+      min-height: 100dvh;
+      background-color: var(--bg);
+      background-image:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(180, 50, 40, 0.38), transparent 60%),
+        radial-gradient(ellipse 60% 40% at 50% 110%, rgba(90, 20, 50, 0.45), transparent 55%),
+        repeating-radial-gradient(circle at 50% 35%, transparent 0 42px, rgba(230, 195, 90, 0.035) 43px, transparent 46px);
+    }
+
+    .app {
+      min-height: 100dvh;
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      padding:
+        max(0.55rem, env(safe-area-inset-top, 0px))
+        max(0.7rem, env(safe-area-inset-right, 0px))
+        max(0.7rem, env(safe-area-inset-bottom, 0px))
+        max(0.7rem, env(safe-area-inset-left, 0px));
+      gap: 0.55rem;
+    }
+
+    header {
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: Palatino, "Palatino Linotype", "Book Antiqua", "Iowan Old Style", Georgia, serif;
+      font-weight: 700;
+      font-size: clamp(1.25rem, 4.2vw, 2.15rem);
+      letter-spacing: 0.02em;
+      color: var(--gold);
+      text-shadow: 0 1px 0 #2a0a12, 0 0 24px rgba(230, 195, 90, 0.25);
+      line-height: 1.15;
+    }
+
+    .subtitle {
+      margin: 0.2rem 0 0.55rem;
+      color: var(--muted);
+      font-size: clamp(0.75rem, 2.2vw, 0.95rem);
+    }
+
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.4rem 0.55rem;
+      margin: 0 auto 0.5rem;
+    }
+
+    .stat {
+      background: rgba(255, 246, 228, 0.07);
+      border: 1px solid rgba(230, 195, 90, 0.28);
+      border-radius: 999px;
+      padding: 0.28rem 0.7rem;
+      font-size: clamp(0.7rem, 2vw, 0.85rem);
+      color: var(--muted);
+      min-width: 5.4rem;
+    }
+
+    .stat strong {
+      display: inline;
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid var(--gold-deep);
+      background: linear-gradient(180deg, #8a1e36, #5c1224);
+      color: var(--ink);
+      font: inherit;
+      font-weight: 650;
+      letter-spacing: 0.03em;
+      padding: 0.45rem 1.15rem;
+      border-radius: 999px;
+      cursor: pointer;
+      touch-action: manipulation;
+      box-shadow: 0 1px 0 rgba(230, 195, 90, 0.35) inset, 0 6px 16px rgba(0, 0, 0, 0.35);
+    }
+
+    .btn:hover { filter: brightness(1.08); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible {
+      outline: 2px solid var(--gold);
+      outline-offset: 3px;
+    }
+
+    .btn-light {
+      background: linear-gradient(180deg, #f3e3a8, #e6c35a);
+      color: var(--card-ink);
+      border-color: #9a7a1c;
+    }
+
+    #board {
+      flex: 1 1 auto;
+      min-height: 0;
+      width: 100%;
+      max-width: 42rem;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      grid-template-rows: repeat(8, 1fr);
+      gap: var(--gap);
+      align-content: stretch;
+    }
+
+    @media (min-width: 760px) {
+      #board {
+        max-width: 64rem;
+        grid-template-columns: repeat(8, 1fr);
+        grid-template-rows: repeat(5, 1fr);
+      }
+    }
+
+    .card {
+      appearance: none;
+      border: 0;
+      padding: 0;
+      margin: 0;
+      background: transparent;
+      cursor: pointer;
+      perspective: 900px;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .card:focus-visible .card-inner {
+      box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--gold);
+    }
+
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.55s cubic-bezier(0.22, 0.7, 0.3, 1);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 10px var(--shadow);
+    }
+
+    .card.is-flipped .card-inner,
+    .card.is-matched .card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .card.is-matched .card-front {
+      background: linear-gradient(165deg, #fff4c4, #efd27a);
+      box-shadow:
+        inset 0 0 0 2px #c9a227,
+        0 0 14px rgba(230, 195, 90, 0.55);
+    }
+
+    .face {
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius);
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .card-back {
+      background-color: var(--card-back);
+      background-image:
+        radial-gradient(circle at 50% 50%, rgba(230, 195, 90, 0.95) 0 7%, transparent 8%),
+        radial-gradient(circle at 50% 50%, transparent 16%, rgba(230, 195, 90, 0.45) 17%, transparent 19%),
+        radial-gradient(circle at 50% 50%, transparent 28%, rgba(230, 195, 90, 0.22) 29.5%, transparent 32%),
+        repeating-conic-gradient(
+          from 11.25deg,
+          rgba(230, 195, 90, 0.22) 0deg 7deg,
+          transparent 7deg 22.5deg
+        ),
+        radial-gradient(circle at 50% 18%, rgba(230, 195, 90, 0.2), transparent 28%),
+        linear-gradient(160deg, #6d1832, #2d0a16 70%);
+      border: 2px solid var(--gold-deep);
+      box-shadow:
+        inset 0 0 0 3px var(--maroon-dark),
+        inset 0 0 0 5px rgba(230, 195, 90, 0.55);
+    }
+
+    .card-back .lotus {
+      font-size: clamp(0.85rem, 3.4vw, 1.7rem);
+      line-height: 1;
+      filter: drop-shadow(0 0 4px rgba(230, 195, 90, 0.85));
+      transform: translateY(1px);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .card-front {
+      background: linear-gradient(165deg, #fffaf0, #f4e4c0);
+      border: 2px solid #d7b45a;
+      color: var(--card-ink);
+      transform: rotateY(180deg);
+      padding: 0.18rem 0.2rem;
+      text-align: center;
+    }
+
+    .card-front .name {
+      font-family: Palatino, "Palatino Linotype", "Book Antiqua", "Iowan Old Style", Georgia, serif;
+      font-size: clamp(0.58rem, 1.7vw + 0.35rem, 1.12rem);
+      font-weight: 700;
+      line-height: 1.12;
+      letter-spacing: -0.01em;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      hyphens: auto;
+      max-width: 100%;
+    }
+
+    .sr-only, .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 4, 8, 0.72);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.25rem;
+      z-index: 20;
+    }
+
+    .overlay[hidden] { display: none; }
+
+    .modal {
+      width: min(26rem, 100%);
+      background: linear-gradient(180deg, #3d1524, #230c14);
+      border: 1px solid var(--gold-deep);
+      border-radius: 1rem;
+      padding: 1.6rem 1.35rem 1.4rem;
+      text-align: center;
+      box-shadow: 0 0 0 1px rgba(230, 195, 90, 0.2), 0 24px 50px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal h2 {
+      margin: 0 0 0.6rem;
+      font-family: Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif;
+      color: var(--gold);
+      font-size: clamp(1.6rem, 5vw, 2.2rem);
+    }
+
+    .modal p {
+      margin: 0.35rem 0;
+      color: var(--ink);
+      font-size: 1rem;
+      line-height: 1.45;
+    }
+
+    .modal .record {
+      color: var(--gold);
+      font-weight: 700;
+    }
+
+    .modal .btn { margin-top: 1rem; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .card-inner { transition: none; }
+      .btn:active { transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Mémoire des dieux indiens</h1>
+      <p class="subtitle">Retrouve les 20 paires identiques de divinités hindoues.</p>
+      <div class="stats" role="group" aria-label="Score">
+        <div class="stat">Coups <strong id="moves">0</strong></div>
+        <div class="stat">Paires <strong id="pairs">0</strong>&nbsp;/&nbsp;20</div>
+        <div class="stat">Temps <strong id="timer">0:00</strong></div>
+        <div class="stat">Meilleur <strong id="best">—</strong></div>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn" id="restart">Rejouer</button>
+      </div>
+    </header>
+
+    <div id="board" role="grid" aria-label="Plateau de mémoire, 40 cartes"></div>
+    <p id="status" class="sr-only" aria-live="polite"></p>
+  </div>
+
+  <div id="win" class="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="win-title">
+    <div class="modal">
+      <h2 id="win-title">Victoire&nbsp;!</h2>
+      <p id="win-text"></p>
+      <p id="win-record" class="record" hidden>Nouveau record&nbsp;!</p>
+      <button type="button" class="btn btn-light" id="new-game">Nouvelle partie</button>
+    </div>
+  </div>
+
+  <script>
+    /*
+     * Liste des 20 divinités : chaque nom forme une paire de cartes identiques.
+     * Pour modifier le jeu, change un nom ici (garde 20 entrées pour 20 paires).
+     * Exemple : remplace "Agni" par "Yama" en copiant un nom de la liste commentée ci-dessous.
+     */
+    const DIEUX = [
+      "Brahma", "Sarasvati", "Vishnu", "Lakshmi", "Shiva",
+      "Parvati", "Ganesha", "Kartikeya", "Indra", "Agni",
+      "Surya", "Chandra", "Hanuman", "Garuda", "Krishna",
+      "Radha", "Rama", "Sita", "Durga", "Kali"
+    ];
+
+    // 10 divinités supplémentaires, à échanger dans DIEUX si tu veux varier le jeu :
+    // const EXTRA = ["Yama", "Varuna", "Vayu", "Kama", "Ganga", "Annapurna", "Narasimha", "Balarama", "Ayyappa", "Vishvakarma"];
+
+    const PAIR_COUNT = DIEUX.length;
+    const FLIP_DELAY_MS = 900;
+    const BEST_KEY = "memoire-dieux-indiens-best";
+
+    const boardEl = document.getElementById("board");
+    const movesEl = document.getElementById("moves");
+    const pairsEl = document.getElementById("pairs");
+    const timerEl = document.getElementById("timer");
+    const bestEl = document.getElementById("best");
+    const statusEl = document.getElementById("status");
+    const winEl = document.getElementById("win");
+    const winTextEl = document.getElementById("win-text");
+    const winRecordEl = document.getElementById("win-record");
+    const restartBtn = document.getElementById("restart");
+    const newGameBtn = document.getElementById("new-game");
+
+    let cards = [];
+    let flipped = [];
+    let locked = false;
+    let moves = 0;
+    let pairsFound = 0;
+    let seconds = 0;
+    let timerId = null;
+    let started = false;
+
+    function shuffle(items) {
+      const arr = items.slice();
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const tmp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = tmp;
+      }
+      return arr;
+    }
+
+    function formatTime(totalSeconds) {
+      const m = Math.floor(totalSeconds / 60);
+      const s = totalSeconds % 60;
+      return m + ":" + String(s).padStart(2, "0");
+    }
+
+    function formatCoups(n) {
+      return n + (n === 1 ? " coup" : " coups");
+    }
+
+    function loadBest() {
+      try {
+        const raw = localStorage.getItem(BEST_KEY);
+        if (!raw) return null;
+        const data = JSON.parse(raw);
+        if (typeof data.moves !== "number" || typeof data.seconds !== "number") return null;
+        return data;
+      } catch (err) {
+        return null;
+      }
+    }
+
+    function saveBest(data) {
+      try {
+        localStorage.setItem(BEST_KEY, JSON.stringify(data));
+      } catch (err) {
+        /* stockage indisponible (mode privé, etc.) */
+      }
+    }
+
+    function isBetter(candidate, current) {
+      if (!current) return true;
+      if (candidate.moves !== current.moves) return candidate.moves < current.moves;
+      return candidate.seconds < current.seconds;
+    }
+
+    function renderBest() {
+      const best = loadBest();
+      bestEl.textContent = best ? (best.moves + " · " + formatTime(best.seconds)) : "—";
+    }
+
+    function startTimer() {
+      if (started) return;
+      started = true;
+      timerId = setInterval(function () {
+        seconds += 1;
+        timerEl.textContent = formatTime(seconds);
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerId) {
+        clearInterval(timerId);
+        timerId = null;
+      }
+    }
+
+    function setCardLabel(btn) {
+      const name = btn.dataset.name;
+      if (btn.classList.contains("is-matched")) {
+        btn.setAttribute("aria-label", name + ", paire trouvée");
+      } else if (btn.classList.contains("is-flipped")) {
+        btn.setAttribute("aria-label", name);
+      } else {
+        btn.setAttribute("aria-label", "Carte face cachée");
+      }
+    }
+
+    function createCard(name, index) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "card";
+      btn.dataset.name = name;
+      btn.dataset.index = String(index);
+      btn.setAttribute("role", "gridcell");
+      btn.setAttribute("aria-label", "Carte face cachée");
+
+      const inner = document.createElement("div");
+      inner.className = "card-inner";
+
+      const back = document.createElement("div");
+      back.className = "face card-back";
+      back.setAttribute("aria-hidden", "true");
+      const lotus = document.createElement("span");
+      lotus.className = "lotus";
+      lotus.textContent = "🪷";
+      back.appendChild(lotus);
+
+      const front = document.createElement("div");
+      front.className = "face card-front";
+      front.setAttribute("aria-hidden", "true");
+      const label = document.createElement("span");
+      label.className = "name";
+      label.textContent = name;
+      front.appendChild(label);
+
+      inner.appendChild(back);
+      inner.appendChild(front);
+      btn.appendChild(inner);
+      btn.addEventListener("click", function () { onCardClick(btn); });
+      return btn;
+    }
+
+    function onCardClick(btn) {
+      if (locked) return;
+      if (btn.classList.contains("is-flipped") || btn.classList.contains("is-matched")) return;
+
+      startTimer();
+      btn.classList.add("is-flipped");
+      setCardLabel(btn);
+      flipped.push(btn);
+
+      if (flipped.length < 2) return;
+
+      moves += 1;
+      movesEl.textContent = String(moves);
+      const a = flipped[0];
+      const b = flipped[1];
+      flipped = [];
+
+      if (a.dataset.name === b.dataset.name) {
+        a.classList.add("is-matched");
+        b.classList.add("is-matched");
+        setCardLabel(a);
+        setCardLabel(b);
+        pairsFound += 1;
+        pairsEl.textContent = String(pairsFound);
+        statusEl.textContent = "Paire trouvée : " + a.dataset.name + ". " + pairsFound + " paires sur " + PAIR_COUNT + ".";
+        if (pairsFound === PAIR_COUNT) {
+          endGame();
+        }
+        return;
+      }
+
+      locked = true;
+      statusEl.textContent = "Pas de paire. Les cartes se retournent.";
+      window.setTimeout(function () {
+        a.classList.remove("is-flipped");
+        b.classList.remove("is-flipped");
+        setCardLabel(a);
+        setCardLabel(b);
+        locked = false;
+      }, FLIP_DELAY_MS);
+    }
+
+    function endGame() {
+      stopTimer();
+      const result = { moves: moves, seconds: seconds };
+      const previous = loadBest();
+      const record = isBetter(result, previous);
+      if (record) saveBest(result);
+      renderBest();
+
+      winTextEl.textContent =
+        "Tu as trouvé les " + PAIR_COUNT + " paires en " + formatCoups(moves) +
+        " et en " + formatTime(seconds) + ".";
+      winRecordEl.hidden = !record;
+      winEl.hidden = false;
+      statusEl.textContent = "Victoire ! " + winTextEl.textContent + (record ? " Nouveau record !" : "");
+      newGameBtn.focus();
+    }
+
+    function newGame() {
+      stopTimer();
+      locked = false;
+      flipped = [];
+      moves = 0;
+      pairsFound = 0;
+      seconds = 0;
+      started = false;
+      movesEl.textContent = "0";
+      pairsEl.textContent = "0";
+      timerEl.textContent = "0:00";
+      winEl.hidden = true;
+      winRecordEl.hidden = true;
+      statusEl.textContent = "";
+      renderBest();
+
+      const deck = shuffle(DIEUX.concat(DIEUX));
+      boardEl.replaceChildren();
+      cards = deck.map(function (name, index) {
+        const card = createCard(name, index);
+        boardEl.appendChild(card);
+        return card;
+      });
+    }
+
+    restartBtn.addEventListener("click", newGame);
+    newGameBtn.addEventListener("click", newGame);
+
+    winEl.addEventListener("click", function (event) {
+      if (event.target === winEl) newGame();
+    });
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && !winEl.hidden) newGame();
+    });
+
+    newGame();
+  </script>
+</body>
+</html>
